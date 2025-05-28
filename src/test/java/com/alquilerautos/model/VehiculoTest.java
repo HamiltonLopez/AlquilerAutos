@@ -7,14 +7,15 @@ class VehiculoTest {
 
     @Test
     void testConstructorAndGetters() {
-        Vehiculo vehiculo = new Vehiculo(1L, "Toyota", "Corolla", 2022, "ABC123", "Sedán");
+        Vehiculo vehiculo = new Vehiculo(1L, "Toyota", "Corolla", "ABC123", 2022, 50.0, true);
         
         assertEquals(1L, vehiculo.getId());
         assertEquals("Toyota", vehiculo.getMarca());
         assertEquals("Corolla", vehiculo.getModelo());
-        assertEquals(2022, vehiculo.getAnio());
         assertEquals("ABC123", vehiculo.getPlaca());
-        assertEquals("Sedán", vehiculo.getTipo());
+        assertEquals(2022, vehiculo.getAnio());
+        assertEquals(50.0, vehiculo.getPrecioAlquilerDia());
+        assertTrue(vehiculo.isDisponible());
     }
 
     @Test
@@ -24,23 +25,25 @@ class VehiculoTest {
         vehiculo.setId(1L);
         vehiculo.setMarca("Toyota");
         vehiculo.setModelo("Corolla");
-        vehiculo.setAnio(2022);
         vehiculo.setPlaca("ABC123");
-        vehiculo.setTipo("Sedán");
+        vehiculo.setAnio(2022);
+        vehiculo.setPrecioAlquilerDia(50.0);
+        vehiculo.setDisponible(true);
 
         assertEquals(1L, vehiculo.getId());
         assertEquals("Toyota", vehiculo.getMarca());
         assertEquals("Corolla", vehiculo.getModelo());
-        assertEquals(2022, vehiculo.getAnio());
         assertEquals("ABC123", vehiculo.getPlaca());
-        assertEquals("Sedán", vehiculo.getTipo());
+        assertEquals(2022, vehiculo.getAnio());
+        assertEquals(50.0, vehiculo.getPrecioAlquilerDia());
+        assertTrue(vehiculo.isDisponible());
     }
 
     @Test
     void testEqualsAndHashCode() {
-        Vehiculo vehiculo1 = new Vehiculo(1L, "Toyota", "Corolla", 2022, "ABC123", "Sedán");
-        Vehiculo vehiculo2 = new Vehiculo(1L, "Toyota", "Corolla", 2022, "ABC123", "Sedán");
-        Vehiculo vehiculo3 = new Vehiculo(2L, "Honda", "Civic", 2023, "XYZ789", "Sedán");
+        Vehiculo vehiculo1 = new Vehiculo(1L, "Toyota", "Corolla", "ABC123", 2022, 50.0, true);
+        Vehiculo vehiculo2 = new Vehiculo(1L, "Toyota", "Corolla", "ABC123", 2022, 50.0, true);
+        Vehiculo vehiculo3 = new Vehiculo(2L, "Honda", "Civic", "XYZ789", 2023, 60.0, false);
 
         assertEquals(vehiculo1, vehiculo2);
         assertEquals(vehiculo1.hashCode(), vehiculo2.hashCode());
@@ -50,7 +53,7 @@ class VehiculoTest {
 
     @Test
     void testToString() {
-        Vehiculo vehiculo = new Vehiculo(1L, "Toyota", "Corolla", 2022, "ABC123", "Sedán");
+        Vehiculo vehiculo = new Vehiculo(1L, "Toyota", "Corolla", "ABC123", 2022, 50.0, true);
         String toString = vehiculo.toString();
 
         assertTrue(toString.contains("id=1"));
@@ -58,7 +61,8 @@ class VehiculoTest {
         assertTrue(toString.contains("modelo=Corolla"));
         assertTrue(toString.contains("anio=2022"));
         assertTrue(toString.contains("placa=ABC123"));
-        assertTrue(toString.contains("tipo=Sedán"));
+        assertTrue(toString.contains("precioAlquilerDia=50.0"));
+        assertTrue(toString.contains("disponible=true"));
     }
 
     @Test
@@ -68,8 +72,9 @@ class VehiculoTest {
         assertNull(vehiculo.getId());
         assertNull(vehiculo.getMarca());
         assertNull(vehiculo.getModelo());
-        assertEquals(0, vehiculo.getAnio());
         assertNull(vehiculo.getPlaca());
-        assertNull(vehiculo.getTipo());
+        assertNull(vehiculo.getAnio());
+        assertEquals(0.0, vehiculo.getPrecioAlquilerDia());
+        assertFalse(vehiculo.isDisponible());
     }
 } 

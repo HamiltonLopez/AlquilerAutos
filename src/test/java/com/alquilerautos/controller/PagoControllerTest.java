@@ -15,13 +15,14 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -52,8 +53,9 @@ class PagoControllerTest {
         pago.setId(1L);
         pago.setReserva(reserva);
         pago.setMonto(100.00);
-        pago.setFechaPago(LocalDate.now());
-        pago.setMetodo("TARJETA");
+        pago.setFechaPago(LocalDateTime.now());
+        pago.setMetodoPago("TARJETA");
+        pago.setEstado("COMPLETADO");
     }
 
     @Test
@@ -66,7 +68,8 @@ class PagoControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.reserva.id").value(1))
                 .andExpect(jsonPath("$.monto").value(100.00))
-                .andExpect(jsonPath("$.metodo").value("TARJETA"));
+                .andExpect(jsonPath("$.metodoPago").value("TARJETA"))
+                .andExpect(jsonPath("$.estado").value("COMPLETADO"));
     }
 
     @Test
@@ -78,7 +81,8 @@ class PagoControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].reserva.id").value(1))
                 .andExpect(jsonPath("$[0].monto").value(100.00))
-                .andExpect(jsonPath("$[0].metodo").value("TARJETA"));
+                .andExpect(jsonPath("$[0].metodoPago").value("TARJETA"))
+                .andExpect(jsonPath("$[0].estado").value("COMPLETADO"));
     }
 
     @Test
@@ -90,8 +94,9 @@ class PagoControllerTest {
         nuevoPago.setId(1L);
         nuevoPago.setReserva(nuevaReserva);
         nuevoPago.setMonto(150.00);
-        nuevoPago.setFechaPago(LocalDate.now().plusDays(1));
-        nuevoPago.setMetodo("EFECTIVO");
+        nuevoPago.setFechaPago(LocalDateTime.now().plusDays(1));
+        nuevoPago.setMetodoPago("EFECTIVO");
+        nuevoPago.setEstado("PENDIENTE");
 
         when(pagoService.update(anyLong(), any(Pago.class))).thenReturn(nuevoPago);
 
@@ -101,7 +106,8 @@ class PagoControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.reserva.id").value(2))
                 .andExpect(jsonPath("$.monto").value(150.00))
-                .andExpect(jsonPath("$.metodo").value("EFECTIVO"));
+                .andExpect(jsonPath("$.metodoPago").value("EFECTIVO"))
+                .andExpect(jsonPath("$.estado").value("PENDIENTE"));
     }
 
     @Test
@@ -110,5 +116,27 @@ class PagoControllerTest {
 
         mockMvc.perform(delete("/api/pagos/1"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void whenEditarPagoInexistente_thenReturn404() throws Exception {
+        when(pagoService.update(anyLong(), any(Pago.class)))
+            .thenThrow(new com.alquilerautos.exception.ResourceNotFoundException("Pago", "id", 1L));
+
+        mockMvc.perform(put("/api/pagos/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(pago)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Pago no encontrado con id: '1'"));
+    }
+
+    @Test
+    void whenEliminarPagoInexistente_thenReturn404() throws Exception {
+        doThrow(new com.alquilerautos.exception.ResourceNotFoundException("Pago", "id", 1L))
+            .when(pagoService).delete(anyLong());
+
+        mockMvc.perform(delete("/api/pagos/1"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Pago no encontrado con id: '1'"));
     }
 } 

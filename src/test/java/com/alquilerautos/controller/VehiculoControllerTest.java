@@ -21,6 +21,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -47,9 +48,10 @@ class VehiculoControllerTest {
         vehiculo.setId(1L);
         vehiculo.setMarca("Toyota");
         vehiculo.setModelo("Corolla");
-        vehiculo.setAnio(2022);
+        vehiculo.setAnio(-2022);
         vehiculo.setPlaca("ABC123");
-        vehiculo.setTipo("Sedán");
+        vehiculo.setPrecioAlquilerDia(50.0);
+        vehiculo.setDisponible(true);
     }
 
     @Test
@@ -62,7 +64,9 @@ class VehiculoControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.marca").value("Toyota"))
                 .andExpect(jsonPath("$.modelo").value("Corolla"))
-                .andExpect(jsonPath("$.placa").value("ABC123"));
+                .andExpect(jsonPath("$.placa").value("ABC123"))
+                .andExpect(jsonPath("$.precioAlquilerDia").value(50.0))
+                .andExpect(jsonPath("$.disponible").value(true));
     }
 
     @Test
@@ -74,7 +78,9 @@ class VehiculoControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].marca").value("Toyota"))
                 .andExpect(jsonPath("$[0].modelo").value("Corolla"))
-                .andExpect(jsonPath("$[0].placa").value("ABC123"));
+                .andExpect(jsonPath("$[0].placa").value("ABC123"))
+                .andExpect(jsonPath("$[0].precioAlquilerDia").value(50.0))
+                .andExpect(jsonPath("$[0].disponible").value(true));
     }
 
     @Test
@@ -97,7 +103,8 @@ class VehiculoControllerTest {
         vehiculoActualizado.setModelo("Civic");
         vehiculoActualizado.setAnio(2023);
         vehiculoActualizado.setPlaca("XYZ789");
-        vehiculoActualizado.setTipo("Sedán");
+        vehiculoActualizado.setPrecioAlquilerDia(60.0);
+        vehiculoActualizado.setDisponible(false);
 
         when(vehiculoService.update(anyLong(), any(Vehiculo.class))).thenReturn(vehiculoActualizado);
 
@@ -107,7 +114,9 @@ class VehiculoControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.marca").value("Honda"))
                 .andExpect(jsonPath("$.modelo").value("Civic"))
-                .andExpect(jsonPath("$.placa").value("XYZ789"));
+                .andExpect(jsonPath("$.placa").value("XYZ789"))
+                .andExpect(jsonPath("$.precioAlquilerDia").value(60.0))
+                .andExpect(jsonPath("$.disponible").value(false));
     }
 
     @Test
@@ -116,5 +125,27 @@ class VehiculoControllerTest {
 
         mockMvc.perform(delete("/api/vehiculos/1"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void whenEditarVehiculoInexistente_thenReturn404() throws Exception {
+        when(vehiculoService.update(anyLong(), any(Vehiculo.class)))
+            .thenThrow(new com.alquilerautos.exception.ResourceNotFoundException("Vehículo", "id", 1L));
+
+        mockMvc.perform(put("/api/vehiculos/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(vehiculo)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Vehículo no encontrado con id: '1'"));
+    }
+
+    @Test
+    void whenEliminarVehiculoInexistente_thenReturn404() throws Exception {
+        doThrow(new com.alquilerautos.exception.ResourceNotFoundException("Vehículo", "id", 1L))
+            .when(vehiculoService).delete(anyLong());
+
+        mockMvc.perform(delete("/api/vehiculos/1"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Vehículo no encontrado con id: '1'"));
     }
 } 

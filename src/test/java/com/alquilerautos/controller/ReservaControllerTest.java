@@ -23,6 +23,7 @@ import java.util.List;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -126,5 +127,27 @@ class ReservaControllerTest {
 
         mockMvc.perform(delete("/api/reservas/1"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void whenEditarReservaInexistente_thenReturn404() throws Exception {
+        when(reservaService.update(anyLong(), any(Reserva.class)))
+            .thenThrow(new com.alquilerautos.exception.ResourceNotFoundException("Reserva", "id", 1L));
+
+        mockMvc.perform(put("/api/reservas/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(reserva)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Reserva no encontrado con id: '1'"));
+    }
+
+    @Test
+    void whenEliminarReservaInexistente_thenReturn404() throws Exception {
+        doThrow(new com.alquilerautos.exception.ResourceNotFoundException("Reserva", "id", 1L))
+            .when(reservaService).delete(anyLong());
+
+        mockMvc.perform(delete("/api/reservas/1"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Reserva no encontrado con id: '1'"));
     }
 } 

@@ -4,20 +4,26 @@ import com.alquilerautos.model.Reserva;
 import com.alquilerautos.model.Usuario;
 import com.alquilerautos.model.Vehiculo;
 import com.alquilerautos.repository.ReservaRepository;
+import com.alquilerautos.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import jakarta.validation.Validator;
+import jakarta.validation.ConstraintViolation;
 
 import java.time.LocalDate;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -25,6 +31,9 @@ class ReservaServiceTest {
 
     @Mock
     private ReservaRepository reservaRepository;
+
+    @Mock
+    private Validator validator;
 
     @InjectMocks
     private ReservaService reservaService;
@@ -43,6 +52,7 @@ class ReservaServiceTest {
         vehiculo.setId(1L);
         vehiculo.setMarca("Toyota");
         vehiculo.setModelo("Corolla");
+        vehiculo.setDisponible(true);
 
         reserva = new Reserva();
         reserva.setId(1L);
@@ -55,6 +65,7 @@ class ReservaServiceTest {
 
     @Test
     void whenSaveReserva_thenReturnReserva() {
+        when(validator.validate(any())).thenReturn(new HashSet<>());
         when(reservaRepository.save(any(Reserva.class))).thenReturn(reserva);
 
         Reserva saved = reservaService.save(reserva);
@@ -64,6 +75,7 @@ class ReservaServiceTest {
         assertEquals(vehiculo.getId(), saved.getVehiculo().getId());
         assertEquals("PENDIENTE", saved.getEstado());
         verify(reservaRepository).save(any(Reserva.class));
+        verify(validator).validate(any());
     }
 
     @Test
@@ -80,6 +92,7 @@ class ReservaServiceTest {
 
     @Test
     void whenUpdateReserva_thenReturnUpdatedReserva() {
+        when(validator.validate(any())).thenReturn(new HashSet<>());
         Usuario nuevoUsuario = new Usuario();
         nuevoUsuario.setId(2L);
         nuevoUsuario.setNombre("María López");
@@ -88,6 +101,7 @@ class ReservaServiceTest {
         nuevoVehiculo.setId(2L);
         nuevoVehiculo.setMarca("Honda");
         nuevoVehiculo.setModelo("Civic");
+        nuevoVehiculo.setDisponible(true);
 
         Reserva nuevaReserva = new Reserva();
         nuevaReserva.setUsuario(nuevoUsuario);
@@ -107,11 +121,41 @@ class ReservaServiceTest {
         assertEquals("CONFIRMADA", updated.getEstado());
         verify(reservaRepository).findById(anyLong());
         verify(reservaRepository).save(any(Reserva.class));
+        verify(validator).validate(any());
+    }
+
+    @Test
+    void whenUpdateReservaNotFound_thenThrowException() {
+        when(reservaRepository.findById(anyLong())).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> {
+            reservaService.update(1L, new Reserva());
+        });
+
+        verify(reservaRepository).findById(anyLong());
+        verify(reservaRepository, never()).save(any(Reserva.class));
     }
 
     @Test
     void whenDeleteReserva_thenVerifyRepositoryCall() {
+        when(reservaRepository.existsById(anyLong())).thenReturn(true);
+        doNothing().when(reservaRepository).deleteById(anyLong());
+
         reservaService.delete(1L);
+
+        verify(reservaRepository).existsById(1L);
         verify(reservaRepository).deleteById(1L);
+    }
+
+    @Test
+    void whenDeleteReservaNotFound_thenThrowException() {
+        when(reservaRepository.existsById(anyLong())).thenReturn(false);
+
+        assertThrows(ResourceNotFoundException.class, () -> {
+            reservaService.delete(1L);
+        });
+
+        verify(reservaRepository).existsById(1L);
+        verify(reservaRepository, never()).deleteById(anyLong());
     }
 } 

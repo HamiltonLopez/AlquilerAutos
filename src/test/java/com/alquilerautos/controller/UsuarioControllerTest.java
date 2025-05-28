@@ -21,6 +21,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -114,5 +115,27 @@ class UsuarioControllerTest {
 
         mockMvc.perform(delete("/api/usuarios/1"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void whenEditarUsuarioInexistente_thenReturn404() throws Exception {
+        when(usuarioService.update(anyLong(), any(Usuario.class)))
+            .thenThrow(new com.alquilerautos.exception.ResourceNotFoundException("Usuario", "id", 1L));
+
+        mockMvc.perform(put("/api/usuarios/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(usuario)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Usuario no encontrado con id: '1'"));
+    }
+
+    @Test
+    void whenEliminarUsuarioInexistente_thenReturn404() throws Exception {
+        doThrow(new com.alquilerautos.exception.ResourceNotFoundException("Usuario", "id", 1L))
+            .when(usuarioService).delete(anyLong());
+
+        mockMvc.perform(delete("/api/usuarios/1"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Usuario no encontrado con id: '1'"));
     }
 } 
