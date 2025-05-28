@@ -10,6 +10,7 @@ import jakarta.validation.ConstraintViolation;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.Optional;
 
 @Service
 public class UsuarioService {
@@ -32,9 +33,9 @@ public class UsuarioService {
         }
 
         // Validar correo único
-        List<Usuario> usuariosConCorreo = repo.findByNombreContainingIgnoreCaseOrCorreoContainingIgnoreCase("", u.getCorreo());
-        if (!usuariosConCorreo.isEmpty() && 
-            (u.getId() == null || !usuariosConCorreo.get(0).getId().equals(u.getId()))) {
+        Optional<Usuario> usuarioExistente = repo.findByCorreo(u.getCorreo());
+        if (usuarioExistente.isPresent() && 
+            (u.getId() == null || !usuarioExistente.get().getId().equals(u.getId()))) {
             throw new ValidationException("Ya existe un usuario con este correo");
         }
     }
